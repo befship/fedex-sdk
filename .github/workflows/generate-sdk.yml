@@ -1,0 +1,63 @@
+name: Generate FedEx SDK
+
+on:
+  workflow_dispatch:
+    inputs:
+      create_pr:
+        description: "Open a PR if generated code changed"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.x"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: pip install pyyaml
+      - run: npm install -g postman2openapi
+      - run: go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.5.0
+      - name: Generate from cached OpenAPI (upload Postman via SPEC_LOCAL artifact in future)
+        env:
+          SPEC_LOCAL: ${{ github.workspace }}/.cache/specs/openapi.json
+        run: |
+          if [[ ! -f "$SPEC_LOCAL" ]]; then
+            echo "No cached OpenAPI. Download Postman collections locally and run:"
+            echo "  POSTMAN_DIR=... make generate"
+            echo "Then commit regenerated internal/generated (not .cache)."
+            exit 1
+          fi
+          bash generate.sh
+      - run: go mod tidy
+      - run: go test ./... -count=1
+      - id: diff
+        run: |
+          if git diff --quiet -- internal/generated go.mod go.sum; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: inputs.create_pr && steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "chore: regenerate FedEx clients from OpenAPI"
+          title: "chore: regenerate FedEx clients from OpenAPI"
+          body: |
+            Automated regeneration (Postman → OAS → patch → oapi-codegen).
+
+            - Official Postman/OpenAPI are **not** committed.
+            - Review generated diffs carefully before merge.
+          branch: chore/regenerate-fedex-sdk
+          delete-branch: true

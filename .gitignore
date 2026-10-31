@@ -1,0 +1,21 @@
+# FedEx official Postman / OpenAPI — never commit (fetched at generate time)
+.cache/
+specs/
+postman/*.json
+*.yaml.bak
+openapi.local.json
+openapi.local.yaml
+
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.exe
+bin/
+dist/
+coverage.out
+coverage.html
+__pycache__/
+*.pyc
+.venv/
+node_modules/

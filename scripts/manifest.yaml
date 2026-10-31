@@ -1,0 +1,25 @@
+# FedEx REST API generation manifest.
+# Official Postman collections / OpenAPI are never committed.
+#
+# Pipeline:
+#   1. Place official Postman JSON under .cache/postman/ (or set POSTMAN_DIR)
+#   2. postman2openapi → per-API OAS YAML
+#   3. merge_oas.py → single OpenAPI
+#   4. preprocess.py → patch required/enums/errors
+#   5. oapi-codegen → internal/generated/fedexapi
+#
+# Download collections from:
+#   https://developer.fedex.com/api/en-us/catalog.html
+#   (Rate / Ship / Track — Download Postman Collection on each API page)
+
+package: fedexapi
+server_sandbox: https://apis-sandbox.fedex.com
+server_prod: https://apis.fedex.com
+
+collections:
+  - id: rate
+    file: fedex-rate.json
+  - id: ship
+    file: fedex-ship.json
+  - id: track
+    file: fedex-track.json
